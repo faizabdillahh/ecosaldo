@@ -17,4 +17,12 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
+Route::middleware(['auth'])->group(function () {
+    Route::resource('jenis-sampah', App\Http\Controllers\JenisSampahController::class);
+});
+Route::middleware(['auth'])->group(function () {
+    Route::get('/setoran/create', [App\Http\Controllers\SetoranController::class, 'create'])->name('setoran.create');
+    Route::post('/setoran', [App\Http\Controllers\SetoranController::class, 'store'])->name('setoran.store');
+});
+
+require __DIR__ . '/auth.php';

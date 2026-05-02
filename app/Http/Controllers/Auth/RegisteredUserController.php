@@ -39,6 +39,7 @@ class RegisteredUserController extends Controller
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -48,6 +49,9 @@ class RegisteredUserController extends Controller
             'bank_name' => $request->bank_name,
             'bank_account_number' => $request->bank_account_number,
         ]);
+
+        $user->assignRole('nasabah');
+
         event(new Registered($user));
 
         Auth::login($user);
