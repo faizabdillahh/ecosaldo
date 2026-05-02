@@ -47,7 +47,6 @@
         </form>
     </div>
 
-    @push('scripts')
     <script>
         const hargaSelect = document.getElementById('jenis_sampah_id');
         const beratInput = document.getElementById('berat_kg');
@@ -64,5 +63,4 @@
         hargaSelect.addEventListener('change', hitung);
         beratInput.addEventListener('input', hitung);
     </script>
-    @endpush
 </x-app-layout>
