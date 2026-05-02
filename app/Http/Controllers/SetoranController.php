@@ -38,4 +38,20 @@ class SetoranController extends Controller
 
         return redirect()->route('setoran.create')->with('success', 'Setoran berhasil dicatat.');
     }
+    
+    public function index()
+    {
+        $setorans = Setoran::where('user_id', auth()->id())
+            ->with('jenisSampah')
+            ->latest()
+            ->paginate(10);
+
+        return view('setoran.index', compact('setorans'));
+    }
+
+    public function adminIndex()
+    {
+        $setorans = Setoran::with(['user', 'jenisSampah', 'admin'])->latest()->paginate(10);
+        return view('setoran.admin', compact('setorans'));
+    }
 }

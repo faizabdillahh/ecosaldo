@@ -19,10 +19,10 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware(['auth'])->group(function () {
     Route::resource('jenis-sampah', App\Http\Controllers\JenisSampahController::class);
-});
-Route::middleware(['auth'])->group(function () {
+    Route::get('/setoran', [App\Http\Controllers\SetoranController::class, 'index'])->name('setoran.index');
     Route::get('/setoran/create', [App\Http\Controllers\SetoranController::class, 'create'])->name('setoran.create');
     Route::post('/setoran', [App\Http\Controllers\SetoranController::class, 'store'])->name('setoran.store');
+    Route::get('/admin/setoran', [App\Http\Controllers\SetoranController::class, 'adminIndex'])->name('admin.setoran.index');
 });
 
 require __DIR__ . '/auth.php';
