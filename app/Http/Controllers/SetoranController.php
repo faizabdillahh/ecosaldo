@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\JenisSampah;
 use App\Models\Setoran;
 use App\Models\User;
+use App\Notifications\SetoranBerhasil;
 use Illuminate\Http\Request;
 
 class SetoranController extends Controller
@@ -27,7 +28,7 @@ class SetoranController extends Controller
         $jenis = JenisSampah::findOrFail($request->jenis_sampah_id);
         $total = $jenis->harga_per_kg * $request->berat_kg;
 
-        Setoran::create([
+        $setoran = Setoran::create([
             'user_id' => $request->user_id,
             'admin_id' => auth()->id(),
             'jenis_sampah_id' => $request->jenis_sampah_id,
@@ -35,6 +36,8 @@ class SetoranController extends Controller
             'total_saldo' => $total,
             'tanggal_setor' => now(),
         ]);
+
+        $setoran->user->notify(new SetoranBerhasil($setoran));
 
         return redirect()->route('setoran.create')->with('success', 'Setoran berhasil dicatat.');
     }

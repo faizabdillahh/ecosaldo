@@ -45,4 +45,14 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function getBalanceAttribute()
+    {
+        $totalSetoran = $this->setorans()->sum('total_saldo');
+        $totalPenarikan = $this->withdrawals()
+            ->whereIn('status', ['pending', 'verified', 'processing', 'success'])
+            ->sum('jumlah');
+
+        return $totalSetoran - $totalPenarikan;
+    }
 }

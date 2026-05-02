@@ -2,7 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Models\Withdrawal;
+use App\Notifications\WithdrawalDiajukan;
+use App\Notifications\WithdrawalDisetujui;
+use App\Services\MidtransService;
 use Illuminate\Http\Request;
 
 class WithdrawalController extends Controller
@@ -16,19 +20,18 @@ class WithdrawalController extends Controller
     public function store(Request $request)
     {
         $user = auth()->user();
-        $saldo = $user->setorans()->sum('total_saldo') - $user->withdrawals()->where('status', 'success')->sum('jumlah');
+        $saldo = $user->balance;
 
         $request->validate([
             'jumlah' => [
                 'required',
                 'integer',
                 'min:10000',
-                function ($attribute, $value, $fail) use ($saldo) {
-                    if ($value > $saldo) {
-                        $fail('Saldo tidak mencukupi.');
-                    }
-                },
+                'max:' . $saldo,
             ],
+        ], [
+            'jumlah.max' => 'Saldo tidak mencukupi. Saldo Anda: Rp ' . number_format($saldo),
+            'jumlah.min' => 'Minimal penarikan Rp 10.000.',
         ]);
 
         $pending = $user->withdrawals()->where('status', 'pending')->exists();
@@ -36,13 +39,18 @@ class WithdrawalController extends Controller
             return back()->with('error', 'Masih ada pengajuan yang belum diproses.');
         }
 
-        Withdrawal::create([
+        $withdrawal = Withdrawal::create([
             'user_id' => $user->id,
             'jumlah' => $request->jumlah,
             'status' => 'pending',
             'bank_tujuan' => $user->bank_name,
             'norek_tujuan' => $user->bank_account_number,
         ]);
+
+        $admin = User::role('admin')->first();
+        if ($admin) {
+            $admin->notify(new WithdrawalDiajukan($withdrawal));
+        }
 
         return redirect()->route('withdrawal.index')->with('success', 'Pengajuan tarik saldo berhasil.');
     }
@@ -52,6 +60,7 @@ class WithdrawalController extends Controller
         $withdrawals = auth()->user()->withdrawals()->latest()->paginate(10);
         return view('withdrawal.index', compact('withdrawals'));
     }
+
     public function adminIndex()
     {
         $withdrawals = Withdrawal::with('user')->latest()->paginate(10);
@@ -60,7 +69,13 @@ class WithdrawalController extends Controller
 
     public function verify(Withdrawal $withdrawal)
     {
-        $withdrawal->update(['status' => 'verified']);
-        return back()->with('success', 'Penarikan disetujui.');
+        $withdrawal->update([
+            'status' => 'success',
+            'midtrans_id' => 'manual-' . uniqid(),
+        ]);
+
+        $withdrawal->user->notify(new WithdrawalDisetujui($withdrawal));
+
+        return back()->with('success', 'Penarikan disetujui. Saldo berhasil diproses.');
     }
 }

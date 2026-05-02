@@ -10,7 +10,7 @@
 
         <div class="mb-4 p-3 bg-gray-100 rounded">
             <p class="text-sm">Saldo Tersedia:</p>
-            <p class="text-2xl font-bold">Rp {{ number_format($user->setorans()->sum('total_saldo') - $user->withdrawals()->where('status', 'success')->sum('jumlah')) }}</p>
+            <p class="text-2xl font-bold">Rp {{ number_format($user->balance) }}</p>
         </div>
 
         <div class="mb-4 p-3 bg-gray-50 rounded text-sm">
