@@ -20,7 +20,9 @@
                     <td class="p-2 border">{{ $r->user->name }}</td>
                     <td class="p-2 border">{{ $r->reward->nama }}</td>
                     <td class="p-2 border">{{ number_format($r->poin_dipakai) }}</td>
-                    <td class="p-2 border">{{ $r->status->label() }}</td>
+                    <td class="p-2 border">
+                        <x-badge :status="$r->status" type="redemption" />
+                    </td>
                     <td class="p-2 border">
                         @if($r->status === \App\Enums\RedemptionStatus::MENUNGGU)
                         <form action="{{ route('admin.redemption.proses', $r) }}" method="POST" class="inline">

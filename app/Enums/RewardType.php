@@ -14,4 +14,11 @@ enum RewardType: string
             self::DIGITAL => 'Digital',
         };
     }
+
+    public static function options(): array
+    {
+        return collect(self::cases())
+            ->mapWithKeys(fn(self $case): array => [$case->value => $case->label()])
+            ->toArray();
+    }
 }

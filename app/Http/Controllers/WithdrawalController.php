@@ -77,6 +77,8 @@ class WithdrawalController extends Controller
         $nasabahs = User::role('nasabah')->latest('name')->get(['id', 'name']);
 
         return view('withdrawal.admin', compact('withdrawals', 'pending', 'nasabahs'));
+
+        
     }
 
     /**

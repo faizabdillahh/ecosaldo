@@ -1,37 +1,75 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="text-lg md:text-xl font-semibold text-gray-900">
-            {{ auth()->user()->hasRole('admin') ? 'Dashboard Admin' : 'Dashboard Nasabah' }}
-        </h2>
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-lg md:text-xl font-semibold text-gray-900">
+                    👋 Halo, {{ auth()->user()->name }}
+                </h2>
+                <p class="text-xs text-gray-500 mt-0.5">{{ now()->isoFormat('dddd, D MMMM Y') }}</p>
+            </div>
+        </div>
     </x-slot>
 
     <div class="py-4 md:py-6 px-3 md:px-4">
         @if(auth()->user()->hasRole('admin'))
             {{-- ========== ADMIN ========== --}}
+
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                <div class="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 text-center shadow-sm">
-                    <svg class="w-6 h-6 mx-auto mb-1 text-eco" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                    <p class="text-xl sm:text-2xl font-bold text-gray-900">{{ \App\Models\User::role('nasabah')->count() }}</p>
-                    <p class="text-xs text-gray-500 mt-1">Nasabah</p>
+                <x-card-stat :value="$totalNasabah" label="Nasabah" color="eco"
+                    icon='<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>' />
+                <x-card-stat :value="$totalSetoran" label="Setoran" color="finance"
+                    icon='<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>' />
+                <x-card-stat :value="$pendingWithdrawal" label="Menunggu" color="warning"
+                    icon='<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' />
+                <x-card-stat :value="$totalReward" label="Reward" color="reward"
+                    icon='<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>' />
+            </div>
+
+            {{-- Grafik + Reward --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">📊 Setoran Bulanan ({{ now()->year }})</h3>
+                    <canvas id="chartSetoran" height="200"></canvas>
                 </div>
-                <div class="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 text-center shadow-sm">
-                    <svg class="w-6 h-6 mx-auto mb-1 text-finance" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-                    <p class="text-xl sm:text-2xl font-bold text-gray-900">{{ \App\Models\Setoran::count() }}</p>
-                    <p class="text-xs text-gray-500 mt-1">Setoran</p>
-                </div>
-                <div class="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 text-center shadow-sm">
-                    <svg class="w-6 h-6 mx-auto mb-1 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <p class="text-xl sm:text-2xl font-bold text-warning">{{ \App\Models\Withdrawal::where('status', 'pending')->count() }}</p>
-                    <p class="text-xs text-gray-500 mt-1">Menunggu</p>
-                </div>
-                <div class="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 text-center shadow-sm">
-                    <svg class="w-6 h-6 mx-auto mb-1 text-reward" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
-                    <p class="text-xl sm:text-2xl font-bold text-reward">{{ \App\Models\Reward::where('stok', '>', 0)->count() }}</p>
-                    <p class="text-xs text-gray-500 mt-1">Reward</p>
+                <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">🏆 Reward Terpopuler</h3>
+                    @if($rewardPopuler->count())
+                        <div class="space-y-2">
+                            @foreach($rewardPopuler as $r)
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">{{ $r->nama }}</span>
+                                <span class="font-medium text-gray-900">{{ $r->redemptions_count }}x</span>
+                            </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <p class="text-xs text-gray-400">Belum ada data</p>
+                    @endif
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {{-- Aktivitas Terbaru --}}
+            <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm mb-6">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">📌 Aktivitas Terbaru</h3>
+                @if($aktivitasTerbaru->count())
+                    <div class="space-y-2">
+                        @foreach($aktivitasTerbaru as $s)
+                        <div class="flex items-center justify-between text-sm border-b border-gray-50 pb-2 last:border-0">
+                            <div>
+                                <span class="font-medium text-gray-900">{{ $s->user->name }}</span>
+                                <span class="text-gray-500">setor {{ $s->berat_kg }}kg {{ $s->jenisSampah->nama }}</span>
+                            </div>
+                            <span class="text-xs text-gray-400">{{ $s->created_at->diffForHumans() }}</span>
+                        </div>
+                        @endforeach
+                    </div>
+                @else
+                    <p class="text-xs text-gray-400">Belum ada aktivitas</p>
+                @endif
+            </div>
+
+            {{-- Quick Actions --}}
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <a href="/setoran/create" class="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 text-center shadow-sm hover:shadow-md hover:border-eco-200 transition">
                     <svg class="w-6 h-6 mx-auto mb-1 text-eco" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                     <div class="text-xs sm:text-sm font-semibold text-gray-900">Input Setoran</div>
@@ -41,8 +79,12 @@
                     <div class="text-xs sm:text-sm font-semibold text-gray-900">Semua Setoran</div>
                 </a>
                 <a href="/admin/withdrawal" class="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 text-center shadow-sm hover:shadow-md hover:border-eco-200 transition">
-                    <svg class="w-6 h-6 mx-auto mb-1 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    <svg class="w-6 h-6 mx-auto mb-1 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
                     <div class="text-xs sm:text-sm font-semibold text-gray-900">Verifikasi Penarikan</div>
+                </a>
+                <a href="/admin/laporan" class="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 text-center shadow-sm hover:shadow-md hover:border-eco-200 transition">
+                    <svg class="w-6 h-6 mx-auto mb-1 text-finance" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <div class="text-xs sm:text-sm font-semibold text-gray-900">Laporan</div>
                 </a>
                 <a href="/admin/redemption" class="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 text-center shadow-sm hover:shadow-md hover:border-eco-200 transition">
                     <svg class="w-6 h-6 mx-auto mb-1 text-reward" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>
@@ -57,6 +99,32 @@
                     <div class="text-xs sm:text-sm font-semibold text-gray-900">Jenis Sampah</div>
                 </a>
             </div>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    const ctx = document.getElementById('chartSetoran')?.getContext('2d');
+                    if (!ctx) return;
+                    const bulanLabels = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+                    const dataBulanan = @json($setoranBulanan);
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: bulanLabels,
+                            datasets: [{
+                                label: 'Total Saldo (Rp)',
+                                data: bulanLabels.map((_, i) => dataBulanan[i+1] || 0),
+                                backgroundColor: '#059669',
+                                borderRadius: 6,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: { legend: { display: false } },
+                            scales: { y: { beginAtZero: true, ticks: { callback: v => 'Rp ' + v.toLocaleString('id') } } }
+                        }
+                    });
+                });
+            </script>
 
         @else
             {{-- ========== NASABAH ========== --}}

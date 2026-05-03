@@ -6,20 +6,45 @@ use App\Http\Controllers\RedemptionController;
 use App\Http\Controllers\RewardController;
 use App\Http\Controllers\SetoranController;
 use App\Http\Controllers\WithdrawalController;
+use App\Models\Reward;
+use App\Models\Setoran;
+use App\Models\User;
+use App\Models\Withdrawal;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 
 // Rate Limiting
-RateLimiter::for('login', fn ($request) => Limit::perMinute(5)->by($request->ip()));
-RateLimiter::for('register', fn ($request) => Limit::perMinute(3)->by($request->ip()));
-RateLimiter::for('withdrawal', fn ($request) => Limit::perMinute(2)->by(auth()->id()));
+RateLimiter::for('login', fn($request) => Limit::perMinute(5)->by($request->ip()));
+RateLimiter::for('register', fn($request) => Limit::perMinute(3)->by($request->ip()));
+RateLimiter::for('withdrawal', fn($request) => Limit::perMinute(2)->by(auth()->id()));
 
-Route::get('/', fn () => view('welcome'));
+Route::get('/', fn() => view('welcome'));
 
-Route::get('/dashboard', fn () => view('dashboard'))
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
+Route::get('/dashboard', function () {
+    $isAdmin = auth()->user()->hasRole('admin');
+
+    $data = [
+        'totalNasabah' => User::role('nasabah')->count(),
+        'totalSetoran' => Setoran::count(),
+        'pendingWithdrawal' => Withdrawal::where('status', 'pending')->count(),
+        'totalReward' => Reward::where('stok', '>', 0)->count(),
+        'setoranBulanan' => Setoran::selectRaw('MONTH(tanggal_setor) as bulan, SUM(total_saldo) as total')
+            ->whereYear('tanggal_setor', now()->year)
+            ->groupBy('bulan')
+            ->pluck('total', 'bulan'),
+        'rewardPopuler' => Reward::withCount('redemptions')
+            ->orderByDesc('redemptions_count')
+            ->take(5)
+            ->get(),
+        'aktivitasTerbaru' => Setoran::with(['user', 'jenisSampah'])
+            ->latest()
+            ->take(5)
+            ->get(),
+    ];
+
+    return view('dashboard', $data);
+})->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::get('/notifications', function () {
     $notifications = auth()->user()->notifications()->paginate(10);
