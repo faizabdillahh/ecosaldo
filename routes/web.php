@@ -47,6 +47,10 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/admin/redemption/{redemption}/proses', [App\Http\Controllers\RedemptionController::class, 'proses'])->name('admin.redemption.proses');
     Route::post('/admin/redemption/{redemption}/selesaikan', [App\Http\Controllers\RedemptionController::class, 'selesaikan'])->name('admin.redemption.selesaikan');
     Route::post('/admin/redemption/{redemption}/tolak', [App\Http\Controllers\RedemptionController::class, 'tolak'])->name('admin.redemption.tolak');
+    Route::get('/admin/laporan', [App\Http\Controllers\LaporanController::class, 'index'])->name('admin.laporan');
+    Route::get('/admin/laporan/export', [App\Http\Controllers\LaporanController::class, 'export'])->name('admin.laporan.export');
+    Route::get('/admin/laporan/export-withdrawals', [App\Http\Controllers\LaporanController::class, 'exportWithdrawals'])->name('admin.laporan.export-withdrawals');
+    Route::get('/admin/laporan/export-redemptions', [App\Http\Controllers\LaporanController::class, 'exportRedemptions'])->name('admin.laporan.export-redemptions');
 });
 
 require __DIR__ . '/auth.php';
