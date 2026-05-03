@@ -2,47 +2,50 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreSetoranRequest;
 use App\Models\JenisSampah;
 use App\Models\Setoran;
 use App\Models\User;
 use App\Notifications\SetoranBerhasil;
-use Illuminate\Http\Request;
+use App\Services\SetoranService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 
 class SetoranController extends Controller
 {
-    public function create()
+    public function __construct(
+        protected SetoranService $setoranService
+    ) {}
+
+    public function create(): View
     {
-        $nasabahs = User::role('nasabah')->get();
-        $jenisSampahs = JenisSampah::all();
+        $nasabahs = User::role('nasabah')->latest('name')->get(['id', 'name', 'email']);
+        $jenisSampahs = JenisSampah::orderBy('nama')->get(['id', 'nama', 'harga_per_kg']);
+
         return view('setoran.create', compact('nasabahs', 'jenisSampahs'));
     }
 
-    public function store(Request $request)
+    public function store(StoreSetoranRequest $request): RedirectResponse
     {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'jenis_sampah_id' => 'required|exists:jenis_sampahs,id',
-            'berat_kg' => 'required|numeric|min:0.1',
-        ]);
+        $validated = $request->validated();
+        $jenis = JenisSampah::findOrFail($validated['jenis_sampah_id']);
+        $admin = auth()->user();
 
-        $jenis = JenisSampah::findOrFail($request->jenis_sampah_id);
-        $total = $jenis->harga_per_kg * $request->berat_kg;
-
-        $setoran = Setoran::create([
-            'user_id' => $request->user_id,
-            'admin_id' => auth()->id(),
-            'jenis_sampah_id' => $request->jenis_sampah_id,
-            'berat_kg' => $request->berat_kg,
-            'total_saldo' => $total,
-            'tanggal_setor' => now(),
-        ]);
+        $setoran = $this->setoranService->create(
+            nasabahId: (int) $validated['user_id'],
+            adminId: $admin->id,
+            jenisSampah: $jenis,
+            beratKg: (float) $validated['berat_kg'],
+        );
 
         $setoran->user->notify(new SetoranBerhasil($setoran));
 
-        return redirect()->route('setoran.create')->with('success', 'Setoran berhasil dicatat.');
+        return redirect()
+            ->route('setoran.create')
+            ->with('success', 'Setoran berhasil dicatat.');
     }
-    
-    public function index()
+
+    public function index(): View
     {
         $setorans = Setoran::where('user_id', auth()->id())
             ->with('jenisSampah')
@@ -52,9 +55,12 @@ class SetoranController extends Controller
         return view('setoran.index', compact('setorans'));
     }
 
-    public function adminIndex()
+    public function adminIndex(): View
     {
-        $setorans = Setoran::with(['user', 'jenisSampah', 'admin'])->latest()->paginate(10);
+        $setorans = Setoran::with(['user', 'jenisSampah', 'admin'])
+            ->latest()
+            ->paginate(10);
+
         return view('setoran.admin', compact('setorans'));
     }
 }

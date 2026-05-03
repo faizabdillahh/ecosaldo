@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+
 <head>
     <x-seo />
 
@@ -17,6 +18,7 @@
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
+
 <body class="font-sans antialiased">
     <div class="min-h-screen bg-gray-50">
         @include('layouts.navigation')
@@ -33,5 +35,10 @@
             {{ $slot }}
         </main>
     </div>
+
+    <footer class="bg-gray-900 text-gray-400 text-xs text-center py-6 px-4 mt-8">
+        &copy; {{ now()->year }} EcoSaldo. Sampahmu, Saldomu.
+    </footer>
 </body>
+
 </html>
