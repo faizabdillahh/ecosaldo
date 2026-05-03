@@ -73,7 +73,6 @@ class User extends Authenticatable
         $totalPenarikan = $this->withdrawals()
             ->whereIn('status', [
                 WithdrawalStatus::PENDING,
-                WithdrawalStatus::VERIFIED,
                 WithdrawalStatus::PROCESSING,
                 WithdrawalStatus::SUCCESS,
             ])

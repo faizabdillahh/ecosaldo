@@ -45,7 +45,6 @@ class Withdrawal extends Model
     {
         return $query->whereIn('status', [
             WithdrawalStatus::PENDING,
-            WithdrawalStatus::VERIFIED,
             WithdrawalStatus::PROCESSING,
             WithdrawalStatus::SUCCESS,
         ]);

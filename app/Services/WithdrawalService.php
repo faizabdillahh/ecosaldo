@@ -54,13 +54,14 @@ class WithdrawalService
         }
 
         if (!empty($filters['month'])) {
-            $query->whereMonth('created_at', $filters['month']);
+            $date = \Carbon\Carbon::parse($filters['month']);
+            $query->whereMonth('created_at', $date->month)
+                ->whereYear('created_at', $date->year);
         }
 
         $statusOrder = implode("','", [
             WithdrawalStatus::PENDING->value,
             WithdrawalStatus::PROCESSING->value,
-            WithdrawalStatus::VERIFIED->value,
             WithdrawalStatus::SUCCESS->value,
             WithdrawalStatus::FAILED->value,
         ]);

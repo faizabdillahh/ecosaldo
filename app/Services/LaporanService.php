@@ -75,7 +75,9 @@ class LaporanService
 
         $sheet->getStyle('A1:E' . ($row - 1))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
 
-        return $this->downloadXlsx($spreadsheet, "laporan-setoran-{$dari}-to-{$sampai}.xlsx");
+        $filename = "laporan-setoran-{$dari}-to-{$sampai}-" . now()->format('His') . ".xlsx";
+
+        return $this->downloadXlsx($spreadsheet, $filename);
     }
 
     public function exportWithdrawals(string $dari, string $sampai): BinaryFileResponse
@@ -102,7 +104,7 @@ class LaporanService
             $sheet->setCellValue('C' . $row, $w->jumlah);
             $sheet->setCellValue('D' . $row, $w->bank_tujuan);
             $sheet->setCellValue('E' . $row, $w->norek_tujuan);
-            $sheet->setCellValue('F' . $row, ucfirst($w->status));
+            $sheet->setCellValue('F' . $row, $w->status->label());
             $row++;
         }
 
@@ -112,7 +114,9 @@ class LaporanService
 
         $sheet->getStyle('A1:F' . ($row - 1))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
 
-        return $this->downloadXlsx($spreadsheet, "laporan-penarikan-{$dari}-to-{$sampai}.xlsx");
+        $filename = "laporan-penarikan-{$dari}-to-{$sampai}-" . now()->format('His') . ".xlsx";
+
+        return $this->downloadXlsx($spreadsheet, $filename);
     }
 
     public function exportRedemptions(string $dari, string $sampai): BinaryFileResponse
@@ -138,8 +142,8 @@ class LaporanService
             $sheet->setCellValue('B' . $row, $r->user->name);
             $sheet->setCellValue('C' . $row, $r->reward->nama);
             $sheet->setCellValue('D' . $row, $r->poin_dipakai);
-            $sheet->setCellValue('E' . $row, ucfirst($r->reward->jenis));
-            $sheet->setCellValue('F' . $row, ucfirst($r->status));
+            $sheet->setCellValue('E' . $row, $r->reward->jenis->label());
+            $sheet->setCellValue('F' . $row, $r->status->label());
             $row++;
         }
 
@@ -149,12 +153,11 @@ class LaporanService
 
         $sheet->getStyle('A1:F' . ($row - 1))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
 
-        return $this->downloadXlsx($spreadsheet, "laporan-reward-{$dari}-to-{$sampai}.xlsx");
+        $filename = "laporan-reward-{$dari}-to-{$sampai}-" . now()->format('His') . ".xlsx";
+
+        return $this->downloadXlsx($spreadsheet, $filename);
     }
 
-    /**
-     * Simpan spreadsheet ke file temporary & return download response.
-     */
     private function downloadXlsx(Spreadsheet $spreadsheet, string $filename): BinaryFileResponse
     {
         $tempFile = tempnam(sys_get_temp_dir(), 'ecosaldo') . '.xlsx';
