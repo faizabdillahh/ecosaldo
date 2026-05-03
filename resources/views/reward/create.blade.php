@@ -1,0 +1,35 @@
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="text-xl font-semibold">Tambah Reward</h2>
+    </x-slot>
+
+    <div class="py-6 px-4 max-w-md">
+        <form action="{{ route('reward.store') }}" method="POST">
+            @csrf
+            <div class="mb-3">
+                <label class="block text-sm">Nama</label>
+                <input type="text" name="nama" class="w-full border rounded p-2" required>
+            </div>
+            <div class="mb-3">
+                <label class="block text-sm">Deskripsi</label>
+                <textarea name="deskripsi" class="w-full border rounded p-2" rows="2"></textarea>
+            </div>
+            <div class="mb-3">
+                <label class="block text-sm">Poin Dibutuhkan</label>
+                <input type="number" name="poin_dibutuhkan" class="w-full border rounded p-2" required>
+            </div>
+            <div class="mb-3">
+                <label class="block text-sm">Stok</label>
+                <input type="number" name="stok" class="w-full border rounded p-2" required>
+            </div>
+            <div class="mb-3">
+                <label class="block text-sm">Jenis</label>
+                <select name="jenis" class="w-full border rounded p-2" required>
+                    <option value="fisik">Fisik</option>
+                    <option value="digital">Digital</option>
+                </select>
+            </div>
+            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Simpan</button>
+        </form>
+    </div>
+</x-app-layout>

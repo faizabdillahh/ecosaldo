@@ -29,6 +29,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/withdrawal', [App\Http\Controllers\WithdrawalController::class, 'index'])->name('withdrawal.index');
     Route::get('/withdrawal/create', [App\Http\Controllers\WithdrawalController::class, 'create'])->name('withdrawal.create');
     Route::post('/withdrawal', [App\Http\Controllers\WithdrawalController::class, 'store'])->name('withdrawal.store');
+    Route::get('/redemption/catalog', [App\Http\Controllers\RedemptionController::class, 'catalog'])->name('redemption.catalog');
+    Route::post('/redemption', [App\Http\Controllers\RedemptionController::class, 'store'])->name('redemption.store');
+    Route::get('/redemption', [App\Http\Controllers\RedemptionController::class, 'history'])->name('redemption.history');
 });
 
 // Routes khusus Admin
@@ -39,6 +42,11 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/setoran', [App\Http\Controllers\SetoranController::class, 'adminIndex'])->name('admin.setoran.index');
     Route::get('/admin/withdrawal', [App\Http\Controllers\WithdrawalController::class, 'adminIndex'])->name('admin.withdrawal.index');
     Route::post('/admin/withdrawal/{withdrawal}/verify', [App\Http\Controllers\WithdrawalController::class, 'verify'])->name('admin.withdrawal.verify');
+    Route::resource('reward', App\Http\Controllers\RewardController::class);
+    Route::get('/admin/redemption', [App\Http\Controllers\RedemptionController::class, 'adminIndex'])->name('admin.redemption.index');
+    Route::post('/admin/redemption/{redemption}/proses', [App\Http\Controllers\RedemptionController::class, 'proses'])->name('admin.redemption.proses');
+    Route::post('/admin/redemption/{redemption}/selesaikan', [App\Http\Controllers\RedemptionController::class, 'selesaikan'])->name('admin.redemption.selesaikan');
+    Route::post('/admin/redemption/{redemption}/tolak', [App\Http\Controllers\RedemptionController::class, 'tolak'])->name('admin.redemption.tolak');
 });
 
 require __DIR__ . '/auth.php';
