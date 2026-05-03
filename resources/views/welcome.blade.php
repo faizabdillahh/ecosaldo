@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <x-seo />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EcoSaldo — Sampahmu, Saldomu</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-white antialiased text-gray-900">
@@ -34,7 +34,10 @@
     <section class="bg-gradient-to-b from-eco to-eco-800 text-white px-4 py-16 sm:py-24 md:py-28">
         <div class="max-w-2xl mx-auto text-center">
             <div class="inline-flex items-center gap-2 bg-white/10 backdrop-blur rounded-full px-4 py-1.5 text-xs sm:text-sm mb-6">
-                🌱 Platform Bank Sampah Digital
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Platform Bank Sampah Digital
             </div>
             <h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight">
                 Sampahmu,<br class="sm:hidden">
@@ -68,7 +71,6 @@
                 <p class="text-sm text-gray-500 mt-2">Ubah sampah jadi saldo dalam 3 langkah mudah</p>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
-                {{-- 1 --}}
                 <div class="bg-white rounded-2xl p-6 text-center shadow-sm">
                     <div class="w-14 h-14 bg-eco-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <svg class="w-7 h-7 text-eco" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -78,7 +80,6 @@
                     <h3 class="font-semibold text-gray-900 mb-1">Setor Sampah</h3>
                     <p class="text-sm text-gray-500">Bawa sampahmu ke bank sampah, petugas catat digital. Saldo otomatis bertambah.</p>
                 </div>
-                {{-- 2 --}}
                 <div class="bg-white rounded-2xl p-6 text-center shadow-sm">
                     <div class="w-14 h-14 bg-finance-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <svg class="w-7 h-7 text-finance" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -88,7 +89,6 @@
                     <h3 class="font-semibold text-gray-900 mb-1">Tarik Saldo</h3>
                     <p class="text-sm text-gray-500">Cairkan saldo ke rekening bank. Langsung diproses, tanpa tunggu lama.</p>
                 </div>
-                {{-- 3 --}}
                 <div class="bg-white rounded-2xl p-6 text-center shadow-sm">
                     <div class="w-14 h-14 bg-reward-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <svg class="w-7 h-7 text-reward" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -105,22 +105,10 @@
     {{-- Stats --}}
     <section class="px-4 py-12 bg-white">
         <div class="max-w-3xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-            <div>
-                <p class="text-2xl sm:text-3xl font-bold text-eco">{{ \App\Models\User::role('nasabah')->count() }}</p>
-                <p class="text-xs text-gray-500 mt-1">Nasabah Aktif</p>
-            </div>
-            <div>
-                <p class="text-2xl sm:text-3xl font-bold text-finance">{{ \App\Models\Setoran::count() }}</p>
-                <p class="text-xs text-gray-500 mt-1">Setoran Tercatat</p>
-            </div>
-            <div>
-                <p class="text-2xl sm:text-3xl font-bold text-reward">{{ \App\Models\Reward::where('stok', '>', 0)->count() }}</p>
-                <p class="text-xs text-gray-500 mt-1">Reward Tersedia</p>
-            </div>
-            <div>
-                <p class="text-2xl sm:text-3xl font-bold text-gray-900">100%</p>
-                <p class="text-xs text-gray-500 mt-1">Transparan</p>
-            </div>
+            <x-card-stat :value="\App\Models\User::role('nasabah')->count()" label="Nasabah Aktif" color="eco" />
+            <x-card-stat :value="\App\Models\Setoran::count()" label="Setoran Tercatat" color="finance" />
+            <x-card-stat :value="\App\Models\Reward::where('stok', '>', 0)->count()" label="Reward Tersedia" color="reward" />
+            <x-card-stat value="100%" label="Transparan" color="gray" />
         </div>
     </section>
 
@@ -130,7 +118,7 @@
         <p class="text-eco-50 text-sm mt-2 mb-6">Gabung sekarang, setor sampah pertamamu, dapatkan saldo.</p>
         @guest
             <a href="{{ route('register') }}" class="inline-flex items-center gap-2 bg-reward text-white font-bold px-6 py-3.5 rounded-xl text-base shadow-lg hover:bg-reward-700 transition">
-                🚀 Daftar Sekarang
+                Daftar Sekarang
             </a>
         @endguest
     </section>

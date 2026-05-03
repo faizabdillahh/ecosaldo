@@ -1,24 +1,21 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="text-xl font-semibold">Edit Jenis Sampah</h2>
+        <h2 class="text-lg md:text-xl font-semibold text-gray-900">Edit Jenis Sampah</h2>
     </x-slot>
 
-    <div class="py-6 px-4 max-w-md">
-        <form action="{{ route('jenis-sampah.update', $jenisSampah) }}" method="POST">
+    <div class="py-6 px-4 max-w-xl mx-auto">
+        <form action="{{ route('jenis-sampah.update', $jenisSampah) }}" method="POST" class="bg-white border border-gray-200 rounded-xl p-6">
             @csrf @method('PUT')
-            <div class="mb-3">
-                <label class="block text-sm">Nama</label>
-                <input type="text" name="nama" value="{{ $jenisSampah->nama }}" class="w-full border rounded p-2" required>
+            <x-input label="Nama" name="nama" :value="$jenisSampah->nama" :required="true" />
+            <div class="mt-4">
+                <x-input label="Harga per Kg" name="harga_per_kg" type="number" :value="$jenisSampah->harga_per_kg" :required="true" />
             </div>
-            <div class="mb-3">
-                <label class="block text-sm">Harga per Kg</label>
-                <input type="number" name="harga_per_kg" value="{{ $jenisSampah->harga_per_kg }}" class="w-full border rounded p-2" required>
+            <div class="mt-4">
+                <x-input label="Kategori" name="kategori" :value="$jenisSampah->kategori" placeholder="Contoh: Plastik, Kertas, Logam" />
             </div>
-            <div class="mb-3">
-                <label class="block text-sm">Kategori</label>
-                <input type="text" name="kategori" value="{{ $jenisSampah->kategori }}" class="w-full border rounded p-2">
+            <div class="mt-6">
+                <x-button type="submit">Update</x-button>
             </div>
-            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Update</button>
         </form>
     </div>
 </x-app-layout>

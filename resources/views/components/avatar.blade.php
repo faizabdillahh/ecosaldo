@@ -1,5 +1,6 @@
 @props([
     'name' => '',
+    'src' => null,
     'size' => 'md',
 ])
 
@@ -10,10 +11,12 @@
         'lg' => 'w-14 h-14 text-lg',
         default => 'w-10 h-10 text-sm',
     };
-    
-    $initial = strtoupper(substr($name, 0, 1));
 @endphp
 
-<div {{ $attributes->merge(['class' => "{$sizes} bg-eco-50 text-eco rounded-full flex items-center justify-center font-bold"]) }}>
-    {{ $initial }}
-</div>
+@if($src)
+    <img src="{{ $src }}" alt="{{ $name }}" {{ $attributes->merge(['class' => "{$sizes} rounded-full object-cover"]) }}>
+@else
+    <div {{ $attributes->merge(['class' => "{$sizes} bg-eco-50 text-eco rounded-full flex items-center justify-center font-bold"]) }}>
+        {{ strtoupper(substr($name, 0, 1)) }}
+    </div>
+@endif

@@ -1,40 +1,33 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="text-xl font-semibold">Edit Reward</h2>
+        <h2 class="text-lg md:text-xl font-semibold text-gray-900">Edit Reward</h2>
     </x-slot>
 
-    <div class="py-6 px-4 max-w-md">
-        <form action="{{ route('reward.update', $reward) }}" method="POST">
+    <div class="py-6 px-4 max-w-xl mx-auto">
+        <form action="{{ route('reward.update', $reward) }}" method="POST" class="bg-white border border-gray-200 rounded-xl p-6">
             @csrf @method('PUT')
-            <div class="mb-3">
-                <label class="block text-sm">Nama</label>
-                <input type="text" name="nama" value="{{ $reward->nama }}" class="w-full border rounded p-2" required>
+            <x-input label="Nama" name="nama" :value="$reward->nama" :required="true" />
+            <div class="mt-4">
+                <label class="text-xs font-medium text-gray-500 block mb-1">Deskripsi</label>
+                <textarea name="deskripsi" rows="2" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5">{{ $reward->deskripsi }}</textarea>
             </div>
-            <div class="mb-3">
-                <label class="block text-sm">Deskripsi</label>
-                <textarea name="deskripsi" class="w-full border rounded p-2"
-                    rows="2">{{ $reward->deskripsi }}</textarea>
+            <div class="mt-4">
+                <x-input label="Poin Dibutuhkan" name="poin_dibutuhkan" type="number" :value="$reward->poin_dibutuhkan" :required="true" />
             </div>
-            <div class="mb-3">
-                <label class="block text-sm">Poin Dibutuhkan</label>
-                <input type="number" name="poin_dibutuhkan" value="{{ $reward->poin_dibutuhkan }}"
-                    class="w-full border rounded p-2" required>
+            <div class="mt-4">
+                <x-input label="Stok" name="stok" type="number" :value="$reward->stok" :required="true" />
             </div>
-            <div class="mb-3">
-                <label class="block text-sm">Stok</label>
-                <input type="number" name="stok" value="{{ $reward->stok }}" class="w-full border rounded p-2" required>
+            <div class="mt-4">
+                <x-select 
+                    label="Jenis"
+                    name="jenis"
+                    :options="\App\Enums\RewardType::options()"
+                    :selected="$reward->jenis->value"
+                />
             </div>
-            <div class="mb-3">
-                <label class="block text-sm">Jenis</label>
-                <select name="jenis" class="w-full border rounded p-2" required>
-                    @foreach(\App\Enums\RewardType::cases() as $type)
-                    <option value="{{ $type->value }}" {{ $reward->jenis === $type ? 'selected' : '' }}>
-                        {{ $type->label() }}
-                    </option>
-                    @endforeach
-                </select>
+            <div class="mt-6">
+                <x-button type="submit">Update</x-button>
             </div>
-            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Update</button>
         </form>
     </div>
 </x-app-layout>

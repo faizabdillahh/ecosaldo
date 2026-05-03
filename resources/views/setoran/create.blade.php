@@ -1,29 +1,26 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="text-xl font-semibold">Input Setoran Sampah</h2>
+        <h2 class="text-lg md:text-xl font-semibold text-gray-900">Input Setoran Sampah</h2>
     </x-slot>
 
-    <div class="py-6 px-4 max-w-lg">
+    <div class="py-6 px-4 max-w-xl mx-auto">
         @if(session('success'))
-            <div class="bg-green-100 text-green-800 p-3 mb-4 rounded">{{ session('success') }}</div>
+            <x-alert type="success">{{ session('success') }}</x-alert>
         @endif
 
-        <form action="{{ route('setoran.store') }}" method="POST">
+        <form action="{{ route('setoran.store') }}" method="POST" class="bg-white border border-gray-200 rounded-xl p-6">
             @csrf
 
-            <div class="mb-3">
-                <label class="block text-sm font-medium">Nasabah</label>
-                <select name="user_id" class="w-full border rounded p-2" required>
-                    <option value="">-- Pilih Nasabah --</option>
-                    @foreach($nasabahs as $n)
-                        <option value="{{ $n->id }}">{{ $n->name }} ({{ $n->email }})</option>
-                    @endforeach
-                </select>
-            </div>
+            <x-select 
+                label="Nasabah"
+                name="user_id"
+                :options="$nasabahs->pluck('name', 'id')->toArray()"
+                placeholder="-- Pilih Nasabah --"
+            />
 
-            <div class="mb-3">
-                <label class="block text-sm font-medium">Jenis Sampah</label>
-                <select name="jenis_sampah_id" id="jenis_sampah_id" class="w-full border rounded p-2" required>
+            <div class="mt-4">
+                <label class="text-xs font-medium text-gray-500 block mb-1">Jenis Sampah</label>
+                <select name="jenis_sampah_id" id="jenis_sampah_id" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5" required>
                     <option value="">-- Pilih Jenis --</option>
                     @foreach($jenisSampahs as $j)
                         <option value="{{ $j->id }}" data-harga="{{ $j->harga_per_kg }}">
@@ -33,17 +30,20 @@
                 </select>
             </div>
 
-            <div class="mb-3">
-                <label class="block text-sm font-medium">Berat (kg)</label>
-                <input type="number" step="0.01" name="berat_kg" id="berat_kg" class="w-full border rounded p-2" required>
+            <div class="mt-4">
+                <x-input label="Berat (kg)" name="berat_kg" id="berat_kg" type="number" step="0.01" :required="true" />
             </div>
 
-            <div class="mb-4 p-3 bg-gray-100 rounded">
-                <span class="text-sm">Total Saldo: </span>
-                <span id="total_display" class="text-lg font-bold">Rp 0</span>
+            <div class="mt-4 p-4 bg-gray-50 rounded-xl">
+                <span class="text-sm text-gray-500">Total Saldo:</span>
+                <span id="total_display" class="text-xl font-bold text-eco">Rp 0</span>
             </div>
 
-            <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded">Simpan Setoran</button>
+            <div class="mt-6">
+                <x-button type="submit">
+                    Simpan Setoran
+                </x-button>
+            </div>
         </form>
     </div>
 

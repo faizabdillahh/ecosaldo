@@ -1,24 +1,21 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="text-xl font-semibold">Tambah Jenis Sampah</h2>
+        <h2 class="text-lg md:text-xl font-semibold text-gray-900">Tambah Jenis Sampah</h2>
     </x-slot>
 
-    <div class="py-6 px-4 max-w-md">
-        <form action="{{ route('jenis-sampah.store') }}" method="POST">
+    <div class="py-6 px-4 max-w-xl mx-auto">
+        <form action="{{ route('jenis-sampah.store') }}" method="POST" class="bg-white border border-gray-200 rounded-xl p-6">
             @csrf
-            <div class="mb-3">
-                <label class="block text-sm">Nama</label>
-                <input type="text" name="nama" class="w-full border rounded p-2" required>
+            <x-input label="Nama" name="nama" :required="true" />
+            <div class="mt-4">
+                <x-input label="Harga per Kg" name="harga_per_kg" type="number" :required="true" />
             </div>
-            <div class="mb-3">
-                <label class="block text-sm">Harga per Kg</label>
-                <input type="number" name="harga_per_kg" class="w-full border rounded p-2" required>
+            <div class="mt-4">
+                <x-input label="Kategori" name="kategori" placeholder="Contoh: Plastik, Kertas, Logam" />
             </div>
-            <div class="mb-3">
-                <label class="block text-sm">Kategori</label>
-                <input type="text" name="kategori" class="w-full border rounded p-2">
+            <div class="mt-6">
+                <x-button type="submit">Simpan</x-button>
             </div>
-            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Simpan</button>
         </form>
     </div>
 </x-app-layout>
