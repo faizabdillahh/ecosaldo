@@ -25,8 +25,9 @@
             <div class="mb-3">
                 <label class="block text-sm">Jenis</label>
                 <select name="jenis" class="w-full border rounded p-2" required>
-                    <option value="fisik">Fisik</option>
-                    <option value="digital">Digital</option>
+                    @foreach(\App\Enums\RewardType::cases() as $type)
+                        <option value="{{ $type->value }}">{{ $type->label() }}</option>
+                    @endforeach
                 </select>
             </div>
             <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Simpan</button>

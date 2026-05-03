@@ -2,84 +2,109 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreRedemptionRequest;
 use App\Models\Redemption;
 use App\Models\Reward;
 use App\Models\User;
 use App\Notifications\RewardDitukar;
 use App\Notifications\RewardSelesai;
 use App\Notifications\RewardDibatalkan;
-use Illuminate\Http\Request;
+use App\Services\RedemptionService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 
 class RedemptionController extends Controller
 {
-    public function catalog()
+    public function __construct(
+        protected RedemptionService $redemptionService
+    ) {}
+
+    /**
+     * Katalog reward untuk nasabah.
+     */
+    public function catalog(): View
     {
         $rewards = Reward::where('stok', '>', 0)->get();
         $saldo = auth()->user()->balance;
+
         return view('redemption.catalog', compact('rewards', 'saldo'));
     }
 
-    public function store(Request $request)
+    /**
+     * Tukar reward.
+     */
+    public function store(StoreRedemptionRequest $request): RedirectResponse
     {
         $user = auth()->user();
-        $reward = Reward::findOrFail($request->reward_id);
-        $saldo = $user->balance;
+        $reward = Reward::findOrFail($request->validated()['reward_id']);
 
-        if ($saldo < $reward->poin_dibutuhkan) {
-            return back()->with('error', 'Saldo tidak mencukupi.');
-        }
-
-        if ($reward->stok < 1) {
-            return back()->with('error', 'Stok habis.');
-        }
-
-        $redemption = Redemption::create([
-            'user_id' => $user->id,
-            'reward_id' => $reward->id,
-            'poin_dipakai' => $reward->poin_dibutuhkan,
-            'status' => 'menunggu',
-        ]);
-
-        $reward->decrement('stok');
+        $redemption = $this->redemptionService->redeem($user, $reward);
 
         $admin = User::role('admin')->first();
         if ($admin) {
             $admin->notify(new RewardDitukar($redemption));
         }
 
-        return redirect()->route('redemption.history')->with('success', 'Reward berhasil ditukar. Menunggu diproses.');
+        return redirect()
+            ->route('redemption.history')
+            ->with('success', 'Reward berhasil ditukar. Menunggu diproses.');
     }
 
-    public function history()
+    /**
+     * Riwayat penukaran nasabah.
+     */
+    public function history(): View
     {
-        $redemptions = auth()->user()->redemptions()->with('reward')->latest()->paginate(10);
+        $redemptions = auth()->user()
+            ->redemptions()
+            ->with('reward')
+            ->latest()
+            ->paginate(10);
+
         return view('redemption.history', compact('redemptions'));
     }
 
-    public function adminIndex()
+    /**
+     * Panel verifikasi penukaran - Admin.
+     */
+    public function adminIndex(): View
     {
-        $redemptions = Redemption::with(['user', 'reward'])->latest()->paginate(10);
+        $redemptions = Redemption::with(['user', 'reward'])
+            ->latest()
+            ->paginate(10);
+
         return view('redemption.admin', compact('redemptions'));
     }
 
-    public function proses(Redemption $redemption)
+    /**
+     * Proses penukaran.
+     */
+    public function proses(Redemption $redemption): RedirectResponse
     {
-        $redemption->update(['status' => 'diproses']);
+        $this->redemptionService->process($redemption);
+
         return back()->with('success', 'Penukaran sedang diproses.');
     }
 
-    public function selesaikan(Redemption $redemption)
+    /**
+     * Selesaikan penukaran.
+     */
+    public function selesaikan(Redemption $redemption): RedirectResponse
     {
-        $redemption->update(['status' => 'selesai']);
+        $this->redemptionService->complete($redemption);
         $redemption->user->notify(new RewardSelesai($redemption));
+
         return back()->with('success', 'Penukaran selesai.');
     }
 
-    public function tolak(Redemption $redemption)
+    /**
+     * Tolak penukaran.
+     */
+    public function tolak(Redemption $redemption): RedirectResponse
     {
-        $redemption->reward->increment('stok');
-        $redemption->update(['status' => 'dibatalkan']);
+        $this->redemptionService->cancel($redemption);
         $redemption->user->notify(new RewardDibatalkan($redemption));
+
         return back()->with('success', 'Penukaran dibatalkan, stok dikembalikan.');
     }
 }

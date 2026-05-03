@@ -6,7 +6,18 @@ use Illuminate\Database\Eloquent\Model;
 
 class JenisSampah extends Model
 {
-    protected $fillable = ['nama', 'harga_per_kg', 'kategori'];
+    protected $fillable = [
+        'nama',
+        'harga_per_kg',
+        'kategori',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'harga_per_kg' => 'integer',
+        ];
+    }
 
     public function setorans()
     {

@@ -19,7 +19,7 @@
                     <td class="p-2 border">{{ $r->created_at->format('d/m/Y') }}</td>
                     <td class="p-2 border">{{ $r->reward->nama }}</td>
                     <td class="p-2 border">{{ number_format($r->poin_dipakai) }}</td>
-                    <td class="p-2 border">{{ ucfirst($r->status) }}</td>
+                    <td class="p-2 border">{{ $r->status->label() }}</td>
                 </tr>
                 @endforeach
             </tbody>

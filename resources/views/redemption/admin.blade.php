@@ -20,19 +20,19 @@
                     <td class="p-2 border">{{ $r->user->name }}</td>
                     <td class="p-2 border">{{ $r->reward->nama }}</td>
                     <td class="p-2 border">{{ number_format($r->poin_dipakai) }}</td>
-                    <td class="p-2 border">{{ ucfirst($r->status) }}</td>
+                    <td class="p-2 border">{{ $r->status->label() }}</td>
                     <td class="p-2 border">
-                        @if($r->status === 'menunggu')
+                        @if($r->status === \App\Enums\RedemptionStatus::MENUNGGU)
                         <form action="{{ route('admin.redemption.proses', $r) }}" method="POST" class="inline">
                             @csrf <button class="bg-blue-600 text-white px-2 py-1 rounded text-xs">Proses</button>
                         </form>
-                        @elseif($r->status === 'diproses')
+                        @elseif($r->status === \App\Enums\RedemptionStatus::DIPROSES)
                         <form action="{{ route('admin.redemption.selesaikan', $r) }}" method="POST" class="inline">
                             @csrf <button class="bg-green-600 text-white px-2 py-1 rounded text-xs">Selesai</button>
                         </form>
                         @endif
 
-                        @if(in_array($r->status, ['menunggu', 'diproses']))
+                        @if(in_array($r->status, [\App\Enums\RedemptionStatus::MENUNGGU, \App\Enums\RedemptionStatus::DIPROSES]))
                         <form action="{{ route('admin.redemption.tolak', $r) }}" method="POST" class="inline">
                             @csrf <button class="bg-red-600 text-white px-2 py-1 rounded text-xs">Tolak</button>
                         </form>

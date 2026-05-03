@@ -12,11 +12,13 @@
             </div>
             <div class="mb-3">
                 <label class="block text-sm">Deskripsi</label>
-                <textarea name="deskripsi" class="w-full border rounded p-2" rows="2">{{ $reward->deskripsi }}</textarea>
+                <textarea name="deskripsi" class="w-full border rounded p-2"
+                    rows="2">{{ $reward->deskripsi }}</textarea>
             </div>
             <div class="mb-3">
                 <label class="block text-sm">Poin Dibutuhkan</label>
-                <input type="number" name="poin_dibutuhkan" value="{{ $reward->poin_dibutuhkan }}" class="w-full border rounded p-2" required>
+                <input type="number" name="poin_dibutuhkan" value="{{ $reward->poin_dibutuhkan }}"
+                    class="w-full border rounded p-2" required>
             </div>
             <div class="mb-3">
                 <label class="block text-sm">Stok</label>
@@ -25,8 +27,11 @@
             <div class="mb-3">
                 <label class="block text-sm">Jenis</label>
                 <select name="jenis" class="w-full border rounded p-2" required>
-                    <option value="fisik" {{ $reward->jenis == 'fisik' ? 'selected' : '' }}>Fisik</option>
-                    <option value="digital" {{ $reward->jenis == 'digital' ? 'selected' : '' }}>Digital</option>
+                    @foreach(\App\Enums\RewardType::cases() as $type)
+                    <option value="{{ $type->value }}" {{ $reward->jenis === $type ? 'selected' : '' }}>
+                        {{ $type->label() }}
+                    </option>
+                    @endforeach
                 </select>
             </div>
             <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Update</button>

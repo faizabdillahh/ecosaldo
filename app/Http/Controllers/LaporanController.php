@@ -2,210 +2,46 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\JenisSampah;
-use App\Models\Redemption;
-use App\Models\Setoran;
-use App\Models\User;
-use App\Models\Withdrawal;
+use App\Services\LaporanService;
 use Illuminate\Http\Request;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Style\Border;
-
+use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class LaporanController extends Controller
 {
-    public function index(Request $request)
+    public function __construct(
+        protected LaporanService $laporanService
+    ) {}
+
+    public function index(Request $request): View
     {
         $dari = $request->dari ?? now()->startOfMonth()->toDateString();
         $sampai = $request->sampai ?? now()->toDateString();
 
-        $totalNasabah = User::role('nasabah')->count();
-        $totalSetoran = Setoran::whereBetween('tanggal_setor', [$dari, $sampai])->count();
-        $totalBerat = Setoran::whereBetween('tanggal_setor', [$dari, $sampai])->sum('berat_kg');
-        $totalSaldoDikeluarkan = Setoran::whereBetween('tanggal_setor', [$dari, $sampai])->sum('total_saldo');
-        $totalPenarikan = Withdrawal::where('status', 'success')->whereBetween('created_at', [$dari, $sampai])->sum('jumlah');
-        $pendingWithdrawal = Withdrawal::where('status', 'pending')->count();
-        $totalRewardDitukar = Redemption::whereBetween('created_at', [$dari, $sampai])->count();
-
-        $ringkasanJenis = JenisSampah::withSum(['setorans' => fn($q) => $q->whereBetween('tanggal_setor', [$dari, $sampai])], 'berat_kg')
-            ->withSum(['setorans' => fn($q) => $q->whereBetween('tanggal_setor', [$dari, $sampai])], 'total_saldo')
-            ->get();
-
-        $rewardPopuler = \App\Models\Reward::withCount(['redemptions' => fn($q) => $q->whereBetween('created_at', [$dari, $sampai])])
-            ->orderByDesc('redemptions_count')
-            ->take(5)
-            ->get();
-
-        return view('laporan.index', compact(
-            'totalNasabah',
-            'totalSetoran',
-            'totalBerat',
-            'totalSaldoDikeluarkan',
-            'totalPenarikan',
-            'pendingWithdrawal',
-            'totalRewardDitukar',
-            'ringkasanJenis',
-            'rewardPopuler',
-            'dari',
-            'sampai'
-        ));
+        return view('laporan.index', $this->laporanService->getRingkasan($dari, $sampai));
     }
 
-    public function export(Request $request)
+    public function export(Request $request): BinaryFileResponse
     {
         $dari = $request->dari ?? now()->startOfMonth()->toDateString();
         $sampai = $request->sampai ?? now()->toDateString();
 
-        $setorans = Setoran::with(['user', 'jenisSampah'])
-            ->whereBetween('tanggal_setor', [$dari, $sampai])
-            ->latest()
-            ->get();
-
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-
-        // Header
-        $sheet->setCellValue('A1', 'Tanggal');
-        $sheet->setCellValue('B1', 'Nasabah');
-        $sheet->setCellValue('C1', 'Jenis Sampah');
-        $sheet->setCellValue('D1', 'Berat (kg)');
-        $sheet->setCellValue('E1', 'Saldo');
-
-        // Header style
-        $headerStyle = $sheet->getStyle('A1:E1');
-        $headerStyle->getFont()->setBold(true);
-        $headerStyle->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF90EE90');
-
-        // Data
-        $row = 2;
-        foreach ($setorans as $s) {
-            $sheet->setCellValue('A' . $row, $s->tanggal_setor);
-            $sheet->setCellValue('B' . $row, $s->user->name);
-            $sheet->setCellValue('C' . $row, $s->jenisSampah->nama);
-            $sheet->setCellValue('D' . $row, $s->berat_kg);
-            $sheet->setCellValue('E' . $row, $s->total_saldo);
-            $row++;
-        }
-
-        // Auto width
-        foreach (range('A', 'E') as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
-        }
-
-        // Border
-        $sheet->getStyle('A1:E' . ($row - 1))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-
-        $filename = 'laporan-ecosaldo-' . $dari . '-to-' . $sampai . '.xlsx';
-
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-
-        $writer = new Xlsx($spreadsheet);
-        $writer->save('php://output');
-        exit;
+        return $this->laporanService->exportSetoran($dari, $sampai);
     }
 
-    public function exportWithdrawals(Request $request)
+    public function exportWithdrawals(Request $request): BinaryFileResponse
     {
         $dari = $request->dari ?? now()->startOfMonth()->toDateString();
         $sampai = $request->sampai ?? now()->toDateString();
 
-        $withdrawals = Withdrawal::with('user')
-            ->whereBetween('created_at', [$dari, $sampai])
-            ->latest()
-            ->get();
-
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-
-        $sheet->setCellValue('A1', 'Tanggal');
-        $sheet->setCellValue('B1', 'Nasabah');
-        $sheet->setCellValue('C1', 'Jumlah');
-        $sheet->setCellValue('D1', 'Bank');
-        $sheet->setCellValue('E1', 'Rekening');
-        $sheet->setCellValue('F1', 'Status');
-
-        $headerStyle = $sheet->getStyle('A1:F1');
-        $headerStyle->getFont()->setBold(true);
-        $headerStyle->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFFFD700');
-
-        $row = 2;
-        foreach ($withdrawals as $w) {
-            $sheet->setCellValue('A' . $row, $w->created_at->format('d/m/Y'));
-            $sheet->setCellValue('B' . $row, $w->user->name);
-            $sheet->setCellValue('C' . $row, $w->jumlah);
-            $sheet->setCellValue('D' . $row, $w->bank_tujuan);
-            $sheet->setCellValue('E' . $row, $w->norek_tujuan);
-            $sheet->setCellValue('F' . $row, ucfirst($w->status));
-            $row++;
-        }
-
-        foreach (range('A', 'F') as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
-        }
-
-        $sheet->getStyle('A1:F' . ($row - 1))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-
-        $filename = 'laporan-penarikan-' . $dari . '-to-' . $sampai . '.xlsx';
-
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-
-        $writer = new Xlsx($spreadsheet);
-        $writer->save('php://output');
-        exit;
+        return $this->laporanService->exportWithdrawals($dari, $sampai);
     }
 
-    public function exportRedemptions(Request $request)
+    public function exportRedemptions(Request $request): BinaryFileResponse
     {
         $dari = $request->dari ?? now()->startOfMonth()->toDateString();
         $sampai = $request->sampai ?? now()->toDateString();
 
-        $redemptions = Redemption::with(['user', 'reward'])
-            ->whereBetween('created_at', [$dari, $sampai])
-            ->latest()
-            ->get();
-
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-
-        $sheet->setCellValue('A1', 'Tanggal');
-        $sheet->setCellValue('B1', 'Nasabah');
-        $sheet->setCellValue('C1', 'Reward');
-        $sheet->setCellValue('D1', 'Poin');
-        $sheet->setCellValue('E1', 'Jenis');
-        $sheet->setCellValue('F1', 'Status');
-
-        $headerStyle = $sheet->getStyle('A1:F1');
-        $headerStyle->getFont()->setBold(true);
-        $headerStyle->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFDDA0DD');
-
-        $row = 2;
-        foreach ($redemptions as $r) {
-            $sheet->setCellValue('A' . $row, $r->created_at->format('d/m/Y'));
-            $sheet->setCellValue('B' . $row, $r->user->name);
-            $sheet->setCellValue('C' . $row, $r->reward->nama);
-            $sheet->setCellValue('D' . $row, $r->poin_dipakai);
-            $sheet->setCellValue('E' . $row, ucfirst($r->reward->jenis));
-            $sheet->setCellValue('F' . $row, ucfirst($r->status));
-            $row++;
-        }
-
-        foreach (range('A', 'F') as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
-        }
-
-        $sheet->getStyle('A1:F' . ($row - 1))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-
-        $filename = 'laporan-reward-' . $dari . '-to-' . $sampai . '.xlsx';
-
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-
-        $writer = new Xlsx($spreadsheet);
-        $writer->save('php://output');
-        exit;
+        return $this->laporanService->exportRedemptions($dari, $sampai);
     }
 }

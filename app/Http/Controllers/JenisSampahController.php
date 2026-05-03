@@ -2,57 +2,60 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreJenisSampahRequest;
+use App\Http\Requests\UpdateJenisSampahRequest;
 use App\Models\JenisSampah;
-use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 
 class JenisSampahController extends Controller
 {
-    public function index()
+    public function __construct()
     {
-        $jenisSampahs = JenisSampah::all();
-        return view('jenis-sampah.index', compact('jenisSampahs'));
+        $this->middleware('role:admin');
     }
 
-    public function create()
+    public function index(): View
+    {
+        return view('jenis-sampah.index', [
+            'jenisSampahs' => JenisSampah::orderBy('nama')->get(),
+        ]);
+    }
+
+    public function create(): View
     {
         return view('jenis-sampah.create');
     }
 
-    public function store(Request $request)
+    public function store(StoreJenisSampahRequest $request): RedirectResponse
     {
-        $request->validate([
-            'nama' => 'required|string|max:100',
-            'harga_per_kg' => 'required|integer|min:1',
-            'kategori' => 'nullable|string|max:50',
-        ]);
+        JenisSampah::create($request->validated());
 
-        JenisSampah::create($request->all());
-
-        return redirect()->route('jenis-sampah.index')->with('success', 'Jenis sampah berhasil ditambahkan.');
+        return redirect()
+            ->route('jenis-sampah.index')
+            ->with('success', 'Jenis sampah berhasil ditambahkan.');
     }
 
-    public function edit(JenisSampah $jenisSampah)
+    public function edit(JenisSampah $jenisSampah): View
     {
         return view('jenis-sampah.edit', compact('jenisSampah'));
     }
 
-    public function update(Request $request, JenisSampah $jenisSampah)
+    public function update(UpdateJenisSampahRequest $request, JenisSampah $jenisSampah): RedirectResponse
     {
-        $request->validate([
-            'nama' => 'required|string|max:100',
-            'harga_per_kg' => 'required|integer|min:1',
-            'kategori' => 'nullable|string|max:50',
-        ]);
+        $jenisSampah->update($request->validated());
 
-        $jenisSampah->update($request->all());
-
-        return redirect()->route('jenis-sampah.index')->with('success', 'Jenis sampah berhasil diperbarui.');
+        return redirect()
+            ->route('jenis-sampah.index')
+            ->with('success', 'Jenis sampah berhasil diperbarui.');
     }
 
-    public function destroy(JenisSampah $jenisSampah)
+    public function destroy(JenisSampah $jenisSampah): RedirectResponse
     {
         $jenisSampah->delete();
 
-        return redirect()->route('jenis-sampah.index')->with('success', 'Jenis sampah berhasil dihapus.');
+        return redirect()
+            ->route('jenis-sampah.index')
+            ->with('success', 'Jenis sampah berhasil dihapus.');
     }
 }

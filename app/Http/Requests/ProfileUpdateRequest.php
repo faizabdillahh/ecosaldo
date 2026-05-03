@@ -30,4 +30,9 @@ class ProfileUpdateRequest extends FormRequest
             'bank_account_number' => ['nullable', 'string', 'max:30'],
         ];
     }
+
+    public function authorize(): bool
+    {
+        return auth()->check();
+    }
 }

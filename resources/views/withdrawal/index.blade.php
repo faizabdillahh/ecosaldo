@@ -23,7 +23,7 @@
                     <td class="p-2 border">{{ $w->created_at->format('d/m/Y') }}</td>
                     <td class="p-2 border">Rp {{ number_format($w->jumlah) }}</td>
                     <td class="p-2 border">{{ $w->bank_tujuan }}</td>
-                    <td class="p-2 border">{{ ucfirst($w->status) }}</td>
+                    <td class="p-2 border">{{ $w->status->label() }}</td>
                 </tr>
                 @endforeach
             </tbody>

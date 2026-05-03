@@ -2,77 +2,89 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreWithdrawalRequest;
 use App\Models\User;
 use App\Models\Withdrawal;
 use App\Notifications\WithdrawalDiajukan;
 use App\Notifications\WithdrawalDisetujui;
-use App\Services\MidtransService;
+use App\Services\WithdrawalService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class WithdrawalController extends Controller
 {
-    public function create()
+    public function __construct(
+        protected WithdrawalService $withdrawalService
+    ) {}
+
+    /**
+     * Form pengajuan tarik saldo.
+     */
+    public function create(): View
     {
         $user = auth()->user();
         return view('withdrawal.create', compact('user'));
     }
 
-    public function store(Request $request)
+    /**
+     * Simpan pengajuan tarik saldo baru.
+     */
+    public function store(StoreWithdrawalRequest $request): RedirectResponse
     {
         $user = auth()->user();
-        $saldo = $user->balance;
+        $validated = $request->validated();
 
-        $request->validate([
-            'jumlah' => [
-                'required',
-                'integer',
-                'min:10000',
-                'max:' . $saldo,
-            ],
-        ], [
-            'jumlah.max' => 'Saldo tidak mencukupi. Saldo Anda: Rp ' . number_format($saldo),
-            'jumlah.min' => 'Minimal penarikan Rp 10.000.',
-        ]);
+        try {
+            $withdrawal = $this->withdrawalService->create(
+                user: $user,
+                jumlah: (int) $validated['jumlah'],
+            );
 
-        $pending = $user->withdrawals()->where('status', 'pending')->exists();
-        if ($pending) {
-            return back()->with('error', 'Masih ada pengajuan yang belum diproses.');
+            $admin = User::role('admin')->first();
+            if ($admin) {
+                $admin->notify(new WithdrawalDiajukan($withdrawal));
+            }
+
+            return redirect()
+                ->route('withdrawal.index')
+                ->with('success', 'Pengajuan tarik saldo berhasil.');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
         }
-
-        $withdrawal = Withdrawal::create([
-            'user_id' => $user->id,
-            'jumlah' => $request->jumlah,
-            'status' => 'pending',
-            'bank_tujuan' => $user->bank_name,
-            'norek_tujuan' => $user->bank_account_number,
-        ]);
-
-        $admin = User::role('admin')->first();
-        if ($admin) {
-            $admin->notify(new WithdrawalDiajukan($withdrawal));
-        }
-
-        return redirect()->route('withdrawal.index')->with('success', 'Pengajuan tarik saldo berhasil.');
     }
 
-    public function index()
+    /**
+     * Riwayat penarikan nasabah login.
+     */
+    public function index(): View
     {
-        $withdrawals = auth()->user()->withdrawals()->latest()->paginate(10);
+        $withdrawals = auth()->user()
+            ->withdrawals()
+            ->latest()
+            ->paginate(10);
+
         return view('withdrawal.index', compact('withdrawals'));
     }
 
-    public function adminIndex()
+    /**
+     * Panel verifikasi penarikan - Admin only.
+     */
+    public function adminIndex(Request $request): View
     {
-        $withdrawals = Withdrawal::with('user')->latest()->paginate(10);
-        return view('withdrawal.admin', compact('withdrawals'));
+        $withdrawals = $this->withdrawalService->getFiltered($request->only(['user_id', 'status', 'month']));
+        $pending = Withdrawal::where('status', 'pending')->count();
+        $nasabahs = User::role('nasabah')->latest('name')->get(['id', 'name']);
+
+        return view('withdrawal.admin', compact('withdrawals', 'pending', 'nasabahs'));
     }
 
-    public function verify(Withdrawal $withdrawal)
+    /**
+     * Verifikasi penarikan - Admin only.
+     */
+    public function verify(Withdrawal $withdrawal): RedirectResponse
     {
-        $withdrawal->update([
-            'status' => 'success',
-            'midtrans_id' => 'manual-' . uniqid(),
-        ]);
+        $this->withdrawalService->verify($withdrawal);
 
         $withdrawal->user->notify(new WithdrawalDisetujui($withdrawal));
 

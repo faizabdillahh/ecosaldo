@@ -2,58 +2,60 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreRewardRequest;
+use App\Http\Requests\UpdateRewardRequest;
 use App\Models\Reward;
-use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 
 class RewardController extends Controller
 {
-    public function index()
+    public function __construct()
     {
-        $rewards = Reward::all();
-        return view('reward.index', compact('rewards'));
+        $this->middleware('role:admin');
     }
 
-    public function create()
+    public function index(): View
+    {
+        return view('reward.index', [
+            'rewards' => Reward::orderBy('nama')->get(),
+        ]);
+    }
+
+    public function create(): View
     {
         return view('reward.create');
     }
 
-    public function store(Request $request)
+    public function store(StoreRewardRequest $request): RedirectResponse
     {
-        $request->validate([
-            'nama' => 'required|string|max:100',
-            'poin_dibutuhkan' => 'required|integer|min:1',
-            'stok' => 'required|integer|min:0',
-            'jenis' => 'required|in:fisik,digital',
-        ]);
+        Reward::create($request->validated());
 
-        Reward::create($request->all());
-
-        return redirect()->route('reward.index')->with('success', 'Reward berhasil ditambahkan.');
+        return redirect()
+            ->route('reward.index')
+            ->with('success', 'Reward berhasil ditambahkan.');
     }
 
-    public function edit(Reward $reward)
+    public function edit(Reward $reward): View
     {
         return view('reward.edit', compact('reward'));
     }
 
-    public function update(Request $request, Reward $reward)
+    public function update(UpdateRewardRequest $request, Reward $reward): RedirectResponse
     {
-        $request->validate([
-            'nama' => 'required|string|max:100',
-            'poin_dibutuhkan' => 'required|integer|min:1',
-            'stok' => 'required|integer|min:0',
-            'jenis' => 'required|in:fisik,digital',
-        ]);
+        $reward->update($request->validated());
 
-        $reward->update($request->all());
-
-        return redirect()->route('reward.index')->with('success', 'Reward berhasil diperbarui.');
+        return redirect()
+            ->route('reward.index')
+            ->with('success', 'Reward berhasil diperbarui.');
     }
 
-    public function destroy(Reward $reward)
+    public function destroy(Reward $reward): RedirectResponse
     {
         $reward->delete();
-        return redirect()->route('reward.index')->with('success', 'Reward berhasil dihapus.');
+
+        return redirect()
+            ->route('reward.index')
+            ->with('success', 'Reward berhasil dihapus.');
     }
 }

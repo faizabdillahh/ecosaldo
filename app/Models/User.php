@@ -2,13 +2,12 @@
 
 namespace App\Models;
 
-use App\Models\Setoran;
-use App\Models\Withdrawal;
+use App\Enums\WithdrawalStatus;
+use App\Enums\RedemptionStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
-use App\Models\Redemption;
 
 class User extends Authenticatable
 {
@@ -24,16 +23,6 @@ class User extends Authenticatable
         'bank_account_number',
     ];
 
-    public function setorans()
-    {
-        return $this->hasMany(Setoran::class);
-    }
-
-    public function withdrawals()
-    {
-        return $this->hasMany(Withdrawal::class);
-    }
-
     protected $hidden = [
         'password',
         'remember_token',
@@ -47,18 +36,53 @@ class User extends Authenticatable
         ];
     }
 
-    public function getBalanceAttribute()
-    {
-        $totalSetoran = $this->setorans()->sum('total_saldo');
-        $totalPenarikan = $this->withdrawals()
-            ->whereIn('status', ['pending', 'verified', 'processing', 'success'])
-            ->sum('jumlah');
+    /*
+    |--------------------------------------------------------------------------
+    | Relationships
+    |--------------------------------------------------------------------------
+    */
 
-        return $totalSetoran - $totalPenarikan;
+    public function setorans()
+    {
+        return $this->hasMany(Setoran::class);
+    }
+
+    public function withdrawals()
+    {
+        return $this->hasMany(Withdrawal::class);
     }
 
     public function redemptions()
     {
         return $this->hasMany(Redemption::class);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Accessors
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Saldo nasabah: total setoran - penarikan - reward (kecuali dibatalkan).
+     */
+    public function getBalanceAttribute(): int
+    {
+        $totalSetoran = $this->setorans()->sum('total_saldo');
+
+        $totalPenarikan = $this->withdrawals()
+            ->whereIn('status', [
+                WithdrawalStatus::PENDING,
+                WithdrawalStatus::VERIFIED,
+                WithdrawalStatus::PROCESSING,
+                WithdrawalStatus::SUCCESS,
+            ])
+            ->sum('jumlah');
+
+        $totalReward = $this->redemptions()
+            ->whereNotIn('status', [RedemptionStatus::DIBATALKAN])
+            ->sum('poin_dipakai');
+
+        return $totalSetoran - $totalPenarikan - $totalReward;
     }
 }

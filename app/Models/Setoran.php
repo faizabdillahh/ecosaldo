@@ -29,4 +29,13 @@ class Setoran extends Model
     {
         return $this->belongsTo(JenisSampah::class);
     }
+
+    protected function casts(): array
+    {
+        return [
+            'tanggal_setor' => 'date',
+            'berat_kg' => 'decimal:2',
+            'total_saldo' => 'integer',
+        ];
+    }
 }

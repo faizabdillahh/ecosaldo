@@ -1,0 +1,35 @@
+:root {
+    /* Brand - Eco */
+    --color-eco-50: #D1FAE5;
+    --color-eco-200: #6EE7B7;
+    --color-eco-500: #10B981;
+    --color-eco: #059669;
+    --color-eco-700: #047857;
+    --color-eco-800: #065F46;
+
+    /* Brand - Finance */
+    --color-finance-50: #DBEAFE;
+    --color-finance-200: #93C5FD;
+    --color-finance-500: #3B82F6;
+    --color-finance: #2563EB;
+    --color-finance-700: #1D4ED8;
+    --color-finance-800: #1E40AF;
+
+    /* Brand - Reward */
+    --color-reward-50: #EDE9FE;
+    --color-reward-200: #C4B5FD;
+    --color-reward-400: #8B5CF6;
+    --color-reward: #7C3AED;
+    --color-reward-700: #6D28D9;
+    --color-reward-800: #4C1D95;
+
+    /* Semantic - Warning */
+    --color-warning-50: #FFF7ED;
+    --color-warning: #EA580C;
+    --color-warning-700: #C2410C;
+    --color-warning-800: #9A3412;
+
+    /* Focus Ring */
+    --focus-ring: 2px solid #059669;
+    --focus-ring-offset: 2px;
+}
