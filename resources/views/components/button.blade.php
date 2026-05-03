@@ -2,6 +2,7 @@
     'color' => 'eco',
     'type' => 'submit',
     'size' => 'md',
+    'ariaLabel' => null,
 ])
 
 @php
@@ -25,6 +26,7 @@
 
 <button 
     type="{{ $type }}"
+    @if($ariaLabel) aria-label="{{ $ariaLabel }}" @endif
     {{ $attributes->merge(['class' => "inline-flex items-center justify-center font-semibold rounded-lg transition {$colors} {$sizes}"]) }}
 >
     {{ $slot }}

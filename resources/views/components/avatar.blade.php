@@ -14,9 +14,9 @@
 @endphp
 
 @if($src)
-    <img src="{{ $src }}" alt="{{ $name }}" {{ $attributes->merge(['class' => "{$sizes} rounded-full object-cover"]) }}>
+    <img src="{{ $src }}" alt="Foto profil {{ $name }}" {{ $attributes->merge(['class' => "{$sizes} rounded-full object-cover"]) }}>
 @else
-    <div {{ $attributes->merge(['class' => "{$sizes} bg-eco-50 text-eco rounded-full flex items-center justify-center font-bold"]) }}>
+    <div {{ $attributes->merge(['class' => "{$sizes} bg-eco-50 text-eco rounded-full flex items-center justify-center font-bold"]) }} aria-label="{{ $name }}" role="img">
         {{ strtoupper(substr($name, 0, 1)) }}
     </div>
 @endif

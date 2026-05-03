@@ -3,6 +3,7 @@
     'data' => null,
     'emptyTitle' => 'Tidak ada data',
     'emptyDescription' => null,
+    'ariaLabel' => 'Data table',
 ])
 
 @if($data && $data->count() > 0)
@@ -10,14 +11,14 @@
 
         {{-- Mobile: Card List --}}
         @if(isset($mobile))
-            <div class="sm:hidden divide-y divide-gray-100" role="list" aria-label="Mobile data list">
+            <div class="sm:hidden divide-y divide-gray-100" role="list" aria-label="Daftar data mobile">
                 {{ $mobile }}
             </div>
         @endif
 
         {{-- Desktop: Table --}}
         <div class="{{ isset($mobile) ? 'hidden sm:block' : '' }} overflow-x-auto">
-            <table class="w-full text-sm" role="table" aria-label="Data table">
+            <table class="w-full text-sm" role="table" aria-label="{{ $ariaLabel }}">
                 <thead>
                     <tr class="bg-gray-700 text-white text-xs uppercase tracking-wider">
                         @foreach($headers as $header)
