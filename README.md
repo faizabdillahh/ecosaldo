@@ -28,6 +28,7 @@
 | Auth | Laravel Breeze · Spatie Permission |
 | Export | PhpSpreadsheet |
 | Icons | Heroicons |
+| OAuth | Laravel Socialite (Google) |
 
 ---
 
@@ -78,7 +79,7 @@ php artisan serve
 
 | Role | Email | Password |
 |---|---|---|
-| Admin | admin@ecosaldo.test | password |
+| Admin | <admin@ecosaldo.test> | password |
 | Nasabah | Register via `/register` | — |
 
 ---
@@ -95,6 +96,9 @@ MIDTRANS_SERVER_KEY=SB-Mid-server-xxxxx
 MIDTRANS_CLIENT_KEY=SB-Mid-client-xxxxx
 MIDTRANS_MERCHANT_ID=Gxxxxx
 MIDTRANS_IS_PRODUCTION=false
+GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-xxxxx
+GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
 ```
 
 ---

@@ -31,14 +31,16 @@ class RedemptionController extends Controller
     }
 
     /**
-     * Tukar reward.
+     * Tukar reward — bisa lebih dari 1.
      */
     public function store(StoreRedemptionRequest $request): RedirectResponse
     {
         $user = auth()->user();
-        $reward = Reward::findOrFail($request->validated()['reward_id']);
+        $validated = $request->validated();
+        $reward = Reward::findOrFail($validated['reward_id']);
+        $quantity = (int) ($validated['quantity'] ?? 1);
 
-        $redemption = $this->redemptionService->redeem($user, $reward);
+        $redemption = $this->redemptionService->redeem($user, $reward, $quantity);
 
         $admin = User::role('admin')->first();
         if ($admin) {
@@ -47,7 +49,7 @@ class RedemptionController extends Controller
 
         return redirect()
             ->route('redemption.history')
-            ->with('success', 'Reward berhasil ditukar. Menunggu diproses.');
+            ->with('success', 'Reward berhasil ditukar sebanyak ' . $quantity . 'x. Menunggu diproses.');
     }
 
     /**
@@ -82,7 +84,6 @@ class RedemptionController extends Controller
     public function proses(Redemption $redemption): RedirectResponse
     {
         $this->redemptionService->process($redemption);
-
         return back()->with('success', 'Penukaran sedang diproses.');
     }
 
@@ -93,7 +94,6 @@ class RedemptionController extends Controller
     {
         $this->redemptionService->complete($redemption);
         $redemption->user->notify(new RewardSelesai($redemption));
-
         return back()->with('success', 'Penukaran selesai.');
     }
 
@@ -104,7 +104,6 @@ class RedemptionController extends Controller
     {
         $this->redemptionService->cancel($redemption);
         $redemption->user->notify(new RewardDibatalkan($redemption));
-
         return back()->with('success', 'Penukaran dibatalkan, stok dikembalikan.');
     }
 }

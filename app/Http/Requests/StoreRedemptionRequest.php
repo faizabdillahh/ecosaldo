@@ -15,6 +15,7 @@ class StoreRedemptionRequest extends FormRequest
     {
         return [
             'reward_id' => ['required', 'exists:rewards,id'],
+            'quantity'  => ['required', 'integer', 'min:1'],
         ];
     }
 }

@@ -17,155 +17,177 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class LaporanService
 {
+    private const FORMAT_RP = 'Rp #,##0';
+    private const HEADER_COLOR_SETORAN = 'FF90EE90';
+    private const HEADER_COLOR_PENARIKAN = 'FFFFD700';
+    private const HEADER_COLOR_REWARD = 'FFDDA0DD';
+
+    /**
+     * Data ringkasan untuk halaman laporan.
+     */
     public function getRingkasan(string $dari, string $sampai): array
     {
         return [
-            'dari' => $dari,
-            'sampai' => $sampai,
-            'totalNasabah' => User::role('nasabah')->count(),
-            'totalSetoran' => Setoran::whereBetween('tanggal_setor', [$dari, $sampai])->count(),
-            'totalBerat' => Setoran::whereBetween('tanggal_setor', [$dari, $sampai])->sum('berat_kg'),
+            'dari'               => $dari,
+            'sampai'             => $sampai,
+            'totalNasabah'       => User::role('nasabah')->count(),
+            'totalSetoran'       => Setoran::whereBetween('tanggal_setor', [$dari, $sampai])->count(),
+            'totalBerat'         => Setoran::whereBetween('tanggal_setor', [$dari, $sampai])->sum('berat_kg'),
             'totalSaldoDikeluarkan' => Setoran::whereBetween('tanggal_setor', [$dari, $sampai])->sum('total_saldo'),
-            'totalPenarikan' => Withdrawal::where('status', WithdrawalStatus::SUCCESS)
-                ->whereBetween('created_at', [$dari, $sampai])
-                ->sum('jumlah'),
-            'pendingWithdrawal' => Withdrawal::where('status', WithdrawalStatus::PENDING)->count(),
+            'totalPenarikan'     => Withdrawal::where('status', WithdrawalStatus::SUCCESS)
+                ->whereBetween('created_at', [$dari, $sampai])->sum('jumlah'),
+            'pendingWithdrawal'  => Withdrawal::where('status', WithdrawalStatus::PENDING)->count(),
             'totalRewardDitukar' => Redemption::whereBetween('created_at', [$dari, $sampai])->count(),
-            'ringkasanJenis' => JenisSampah::withSum(
-                ['setorans' => fn($q) => $q->whereBetween('tanggal_setor', [$dari, $sampai])], 'berat_kg'
+            'ringkasanJenis'     => JenisSampah::withSum(
+                ['setorans' => fn($q) => $q->whereBetween('tanggal_setor', [$dari, $sampai])],
+                'berat_kg'
             )->withSum(
-                ['setorans' => fn($q) => $q->whereBetween('tanggal_setor', [$dari, $sampai])], 'total_saldo'
+                ['setorans' => fn($q) => $q->whereBetween('tanggal_setor', [$dari, $sampai])],
+                'total_saldo'
             )->get(),
-            'rewardPopuler' => Reward::withCount(
+            'rewardPopuler'      => Reward::withCount(
                 ['redemptions' => fn($q) => $q->whereBetween('created_at', [$dari, $sampai])]
             )->orderByDesc('redemptions_count')->take(5)->get(),
         ];
     }
 
+    /**
+     * Export laporan setoran.
+     */
     public function exportSetoran(string $dari, string $sampai): BinaryFileResponse
     {
-        $setorans = Setoran::with(['user', 'jenisSampah'])
+        $data = Setoran::with(['user', 'jenisSampah'])
             ->whereBetween('tanggal_setor', [$dari, $sampai])
             ->latest()
             ->get();
 
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
+        $headers = ['Tanggal & Waktu', 'Nasabah', 'Jenis Sampah', 'Berat (kg)', 'Saldo'];
 
-        $headers = ['Tanggal', 'Nasabah', 'Jenis Sampah', 'Berat (kg)', 'Saldo'];
-        $sheet->fromArray($headers, null, 'A1');
+        $rows = $data->map(fn(Setoran $s) => [
+            $s->created_at->format('d/m/Y H:i'),
+            $s->user->name,
+            $s->jenisSampah->nama,
+            $s->berat_kg,
+            $this->formatRupiah($s->total_saldo),
+        ])->toArray();
 
-        $headerStyle = $sheet->getStyle('A1:E1');
-        $headerStyle->getFont()->setBold(true);
-        $headerStyle->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF90EE90');
-
-        $row = 2;
-        foreach ($setorans as $s) {
-            $sheet->setCellValue('A' . $row, $s->tanggal_setor);
-            $sheet->setCellValue('B' . $row, $s->user->name);
-            $sheet->setCellValue('C' . $row, $s->jenisSampah->nama);
-            $sheet->setCellValue('D' . $row, $s->berat_kg);
-            $sheet->setCellValue('E' . $row, $s->total_saldo);
-            $row++;
-        }
-
-        foreach (range('A', 'E') as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
-        }
-
-        $sheet->getStyle('A1:E' . ($row - 1))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-
-        $filename = "laporan-setoran-{$dari}-to-{$sampai}-" . now()->format('His') . ".xlsx";
-
-        return $this->downloadXlsx($spreadsheet, $filename);
+        return $this->buildExcel(
+            $headers,
+            $rows,
+            self::HEADER_COLOR_SETORAN,
+            "laporan-setoran-{$dari}-to-{$sampai}"
+        );
     }
 
+    /**
+     * Export laporan penarikan.
+     */
     public function exportWithdrawals(string $dari, string $sampai): BinaryFileResponse
     {
-        $withdrawals = Withdrawal::with('user')
+        $data = Withdrawal::with('user')
             ->whereBetween('created_at', [$dari, $sampai])
             ->latest()
             ->get();
 
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
+        $headers = ['Tanggal & Waktu', 'Nasabah', 'Jumlah', 'Bank', 'Rekening', 'Status'];
 
-        $headers = ['Tanggal', 'Nasabah', 'Jumlah', 'Bank', 'Rekening', 'Status'];
-        $sheet->fromArray($headers, null, 'A1');
+        $rows = $data->map(fn(Withdrawal $w) => [
+            $w->created_at->format('d/m/Y H:i'),
+            $w->user->name,
+            $this->formatRupiah($w->jumlah),
+            $w->bank_tujuan,
+            $w->norek_tujuan,
+            $w->status->label(),
+        ])->toArray();
 
-        $headerStyle = $sheet->getStyle('A1:F1');
-        $headerStyle->getFont()->setBold(true);
-        $headerStyle->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFFFD700');
-
-        $row = 2;
-        foreach ($withdrawals as $w) {
-            $sheet->setCellValue('A' . $row, $w->created_at->format('d/m/Y'));
-            $sheet->setCellValue('B' . $row, $w->user->name);
-            $sheet->setCellValue('C' . $row, $w->jumlah);
-            $sheet->setCellValue('D' . $row, $w->bank_tujuan);
-            $sheet->setCellValue('E' . $row, $w->norek_tujuan);
-            $sheet->setCellValue('F' . $row, $w->status->label());
-            $row++;
-        }
-
-        foreach (range('A', 'F') as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
-        }
-
-        $sheet->getStyle('A1:F' . ($row - 1))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-
-        $filename = "laporan-penarikan-{$dari}-to-{$sampai}-" . now()->format('His') . ".xlsx";
-
-        return $this->downloadXlsx($spreadsheet, $filename);
+        return $this->buildExcel(
+            $headers,
+            $rows,
+            self::HEADER_COLOR_PENARIKAN,
+            "laporan-penarikan-{$dari}-to-{$sampai}"
+        );
     }
 
+    /**
+     * Export laporan penukaran reward.
+     */
     public function exportRedemptions(string $dari, string $sampai): BinaryFileResponse
     {
-        $redemptions = Redemption::with(['user', 'reward'])
+        $data = Redemption::with(['user', 'reward'])
             ->whereBetween('created_at', [$dari, $sampai])
             ->latest()
             ->get();
 
+        $headers = ['Tanggal & Waktu', 'Nasabah', 'Reward', 'Poin', 'Jenis', 'Status'];
+
+        $rows = $data->map(fn(Redemption $r) => [
+            $r->created_at->format('d/m/Y H:i'),
+            $r->user->name,
+            $r->reward->nama,
+            $this->formatRupiah($r->poin_dipakai),
+            $r->reward->jenis->label(),
+            $r->status->label(),
+        ])->toArray();
+
+        return $this->buildExcel(
+            $headers,
+            $rows,
+            self::HEADER_COLOR_REWARD,
+            "laporan-reward-{$dari}-to-{$sampai}"
+        );
+    }
+
+    /**
+     * Build Excel spreadsheet dari headers & rows.
+     */
+    private function buildExcel(array $headers, array $rows, string $headerColor, string $filePrefix): BinaryFileResponse
+    {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        $headers = ['Tanggal', 'Nasabah', 'Reward', 'Poin', 'Jenis', 'Status'];
+        $lastCol = chr(64 + count($headers)); // A, B, C, ...
+        $range = "A1:{$lastCol}1";
+
         $sheet->fromArray($headers, null, 'A1');
+        $sheet->fromArray($rows, null, 'A2');
 
-        $headerStyle = $sheet->getStyle('A1:F1');
+        // Header styling
+        $headerStyle = $sheet->getStyle($range);
         $headerStyle->getFont()->setBold(true);
-        $headerStyle->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFDDA0DD');
+        $headerStyle->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB($headerColor);
 
-        $row = 2;
-        foreach ($redemptions as $r) {
-            $sheet->setCellValue('A' . $row, $r->created_at->format('d/m/Y'));
-            $sheet->setCellValue('B' . $row, $r->user->name);
-            $sheet->setCellValue('C' . $row, $r->reward->nama);
-            $sheet->setCellValue('D' . $row, $r->poin_dipakai);
-            $sheet->setCellValue('E' . $row, $r->reward->jenis->label());
-            $sheet->setCellValue('F' . $row, $r->status->label());
-            $row++;
-        }
-
-        foreach (range('A', 'F') as $col) {
+        // Auto width
+        foreach (range('A', $lastCol) as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        $sheet->getStyle('A1:F' . ($row - 1))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+        // Border
+        $lastRow = count($rows) + 1;
+        $sheet->getStyle("A1:{$lastCol}{$lastRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
 
-        $filename = "laporan-reward-{$dari}-to-{$sampai}-" . now()->format('His') . ".xlsx";
+        $filename = "{$filePrefix}-" . now()->format('His') . '.xlsx';
 
         return $this->downloadXlsx($spreadsheet, $filename);
     }
 
+    /**
+     * Simpan spreadsheet ke file temporary & return download response.
+     */
     private function downloadXlsx(Spreadsheet $spreadsheet, string $filename): BinaryFileResponse
     {
         $tempFile = tempnam(sys_get_temp_dir(), 'ecosaldo') . '.xlsx';
-        $writer = new Xlsx($spreadsheet);
-        $writer->save($tempFile);
+        (new Xlsx($spreadsheet))->save($tempFile);
 
         return response()->download($tempFile, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ])->deleteFileAfterSend();
+    }
+
+    /**
+     * Format angka ke Rupiah string.
+     */
+    private function formatRupiah(int|float $amount): string
+    {
+        return 'Rp ' . number_format($amount, 0, ',', '.');
     }
 }

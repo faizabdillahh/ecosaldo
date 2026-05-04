@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use App\Enums\RedemptionStatus;
@@ -11,28 +13,30 @@ use Illuminate\Support\Facades\DB;
 class RedemptionService
 {
     /**
-     * Nasabah menukar reward.
+     * Nasabah menukar reward — bisa lebih dari 1.
      * Saldo terpotong langsung, stok berkurang.
      */
-    public function redeem(User $user, Reward $reward): Redemption
+    public function redeem(User $user, Reward $reward, int $quantity = 1): Redemption
     {
-        if ($user->balance < $reward->poin_dibutuhkan) {
+        $totalPoin = $reward->poin_dibutuhkan * $quantity;
+
+        if ($user->balance < $totalPoin) {
             throw new \Exception('Saldo tidak mencukupi.');
         }
 
-        if ($reward->stok < 1) {
-            throw new \Exception('Stok habis.');
+        if ($reward->stok < $quantity) {
+            throw new \Exception('Stok tidak mencukupi.');
         }
 
-        return DB::transaction(function () use ($user, $reward) {
+        return DB::transaction(function () use ($user, $reward, $totalPoin, $quantity) {
             $redemption = Redemption::create([
-                'user_id' => $user->id,
-                'reward_id' => $reward->id,
-                'poin_dipakai' => $reward->poin_dibutuhkan,
-                'status' => RedemptionStatus::MENUNGGU,
+                'user_id'      => $user->id,
+                'reward_id'    => $reward->id,
+                'poin_dipakai' => $totalPoin,
+                'status'       => RedemptionStatus::MENUNGGU,
             ]);
 
-            $reward->decrement('stok');
+            $reward->decrement('stok', $quantity);
 
             return $redemption;
         });
@@ -55,12 +59,14 @@ class RedemptionService
     }
 
     /**
-     * Admin batalkan penukaran. Stok kembali.
+     * Admin batalkan penukaran. Stok kembali sesuai quantity.
      */
     public function cancel(Redemption $redemption): void
     {
         DB::transaction(function () use ($redemption) {
-            $redemption->reward->increment('stok');
+            $quantity = (int) ($redemption->poin_dipakai / $redemption->reward->poin_dibutuhkan);
+
+            $redemption->reward->increment('stok', $quantity);
             $redemption->update(['status' => RedemptionStatus::DIBATALKAN]);
         });
     }

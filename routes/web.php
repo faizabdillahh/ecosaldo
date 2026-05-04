@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\NotificationController;
@@ -21,6 +22,12 @@ Route::get('/', fn() => view('welcome'));
 Route::get('/dashboard', DashboardController::class)
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
+
+// Google OAuth
+Route::prefix('auth/google')->group(function () {
+    Route::get('/redirect', [GoogleAuthController::class, 'redirect'])->name('google.login');
+    Route::get('/callback', [GoogleAuthController::class, 'callback']);
+});
 
 // Notifications
 Route::middleware('auth')->group(function () {
